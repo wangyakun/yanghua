@@ -97,7 +97,7 @@ function Draw(){
 
             cxt.fillStyle = "black";
             cxt.font="40px 宋体";
-            cxt.fillText("虎" + obj % 8, gridX + gridWidth / 2 - 30, gridY + gridHeight / 2 + 10);
+            cxt.fillText("虎" + (obj - 8), gridX + gridWidth / 2 - 30, gridY + gridHeight / 2 + 10);
         }
     };
 }
@@ -154,6 +154,70 @@ action.selectGrid(8, 10);
 action.unSelectGrid(8, 10);
 //action.endGame();
 
+function Utils(){}
+
+Utils.randomNum = function(maxNum, minNum){
+    return parseInt(Math.random() * (maxNum - minNum + 1) + minNum, 10);
+};
+
+Utils.getRandomSort = function(arr){
+    var arrCp = arr.concat();
+    var newArr = [];
+    for(var i = arrCp.length - 1; i >= 0; i--){
+        pos = this.randomNum(0, i);
+        newArr.push(arrCp[pos]);
+        arrCp[pos] = arrCp[i];
+    }
+    return newArr;
+};
+
+Utils.range = function ( start,end ){//拷来的，暂未理解
+    var _self = this;
+    var length = end - start + 1;
+    var step = start - 1;
+    return Array.apply(null,{length:length}).map(function (v,i){step++;return step;});
+};
+
 function GameStatus(){
-    
+    this.chessboard = [];
+    this.fogs = [];
+    this.currentSelect = -1;
+    this.init = function(){
+        this.chessboard = Utils.getRandomSort(Utils.range(1,16));
+        for(var i = 0; i < 16; i++){
+            this.fogs[i] = true;
+        }
+    };
+    //Utils
+    this.getChessboardWithFog = function(){
+        var ret = [];
+        for(var i = 0; i < 16; i++){
+            if(this.fogs[i]){
+                ret[i] = -1;
+            } else {
+                ret[i] = this.chessboard[i];
+            }
+        }
+        return ret;
+    };
+    this.getSurvives = function(){ // 0:无用 1-8:龙 9-16:虎
+        var survives = [];
+        for(var i = 0; i <= 16; i++){
+            survives[i] = false;
+        }
+        for(i = 0; i < 16; i++){
+            survives[this.chessboard[i]] = true;
+        }
+        return survives;
+    };
+}
+
+var gameStatus = new GameStatus();
+gameStatus.init();
+
+//alert(gameStatus.chessboard);
+//alert(gameStatus.getChessboardWithFog());
+//alert(gameStatus.getSurvives());
+for(var i = 0; i < 16; i++){
+    action.openGrid(i, gameStatus.chessboard[i]);
 }
