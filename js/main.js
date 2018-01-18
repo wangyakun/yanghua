@@ -111,7 +111,7 @@ function Draw(){
         var fontSize = Math.min(gridHeight * 4 / 5, gridWidth * 3 / 8); // 除8是因为text有7个字,预留个空格
         cxt.fillStyle = "black";
         cxt.font = fontSize + "px 楷体";
-        cxt.fillText(text, gridWidth / 2 + fontSize / 2, gridHeight * 3 / 2 + gridHeight - fontSize / 5);
+        cxt.fillText(text, gridWidth / 2 + fontSize / 2, gridHeight * 2 + fontSize / 2);
     };
 }
 
@@ -490,13 +490,13 @@ function Main(){
     };
 }
 
-Main();
+//Main();
 
 //test -- 调效果用
-//var action = new Action();
-//action.beginGame();
-//action.openGrid(3, 3);
-//action.moveGrid(4,9,5);
-//action.selectGrid(8, 10);
-//action.unSelectGrid(8, 10);
-//action.endGame(1);
+var action = new Action();
+action.beginGame();
+action.openGrid(3, 3);
+action.moveGrid(4,9,5);
+action.selectGrid(8, 10);
+action.unSelectGrid(8, 10);
+action.endGame(1);
