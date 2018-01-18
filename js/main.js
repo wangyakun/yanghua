@@ -490,13 +490,13 @@ function Main(){
     };
 }
 
-//Main();
+Main();
 
-//test -- 调效果用
-var action = new Action();
-action.beginGame();
-action.openGrid(3, 3);
-action.moveGrid(4,9,5);
-action.selectGrid(8, 10);
-action.unSelectGrid(8, 10);
-action.endGame(1);
+////test -- 调效果用
+//var action = new Action();
+//action.beginGame();
+//action.openGrid(3, 3);
+//action.moveGrid(4,9,5);
+//action.selectGrid(8, 10);
+//action.unSelectGrid(8, 10);
+//action.endGame(1);
