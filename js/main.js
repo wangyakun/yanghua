@@ -4,6 +4,12 @@
 var canvas = document.getElementById('canvas');
 var cxt = canvas.getContext('2d');
 
+var screenWidth = document.documentElement.clientWidth;
+var screenHeight = document.documentElement.clientHeight;
+
+canvas.width = screenWidth - (screenWidth % 4);
+canvas.height = screenHeight - (screenHeight % 4);
+
 var gridHeight = canvas.height / 4;
 var gridWidth = canvas.width / 4;
 
@@ -29,17 +35,18 @@ function Draw(){
     this.clearGrid = function(gridNum){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
         var gridX = (gridNum % 4) * gridWidth;
-        var gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridHeight;
         cxt.clearRect(gridX, gridY, gridWidth, gridHeight);
     };
 
     this.drawSelect = function(gridNum){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
         var gridX = (gridNum % 4) * gridWidth;
-        var gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridHeight;
 
         cxt.fillStyle = "#ABCDEF";
-        cxt.fillRect(gridX, gridY, gridWidth, gridWidth);
+        cxt.fillRect(gridX, gridY, gridWidth, gridHeight);
+        console.log("fill", gridX, gridY, gridWidth, gridHeight);
     };
 
     /*
@@ -58,10 +65,24 @@ function Draw(){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
         console.assert(new RegExp('^-?\\d+$').test(obj) && obj >= -1 && obj <= 16, "illeagle obj:" + obj);
         var gridX = (gridNum % 4) * gridWidth;
-        var gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridHeight;
         //console.log(gridX + ',' + gridY);
         cxt.strokeStyle = "red";
         cxt.strokeRect(gridX, gridY, gridWidth, gridHeight);
+        function drawObj(fillcolor, objText){
+            var radius = Math.min(gridWidth, gridHeight) / 4;
+            var fontSize = radius * Math.sqrt(2) * 3 / 4;
+
+            cxt.fillStyle = fillcolor;
+            cxt.beginPath();
+            cxt.arc(gridX + gridWidth / 2, gridY + gridHeight / 2, radius, 0, 360, false);
+            cxt.fill();
+            cxt.closePath();
+
+            cxt.fillStyle = "black";
+            cxt.font = fontSize + "px 微软雅黑";
+            cxt.fillText(objText, gridX + gridWidth / 2 - fontSize / 2 - fontSize / 4, gridY + gridHeight / 2 + fontSize / 2 - fontSize / 5);
+        }
         if(obj == -1){ //阴影
             cxt.strokeStyle = "black";
             cxt.lineWidth = 1;
@@ -77,28 +98,20 @@ function Draw(){
         } else if(obj == 0){
 
         } else if(obj < 9){
-            cxt.fillStyle = "yellow";
-            cxt.beginPath();
-            cxt.arc(gridX + gridWidth / 2, gridY + gridHeight / 2, gridWidth / 4, 0, 360, false);
-            cxt.fill();
-            cxt.closePath();
-
-            cxt.fillStyle = "black";
-            cxt.font="40px 宋体";
-            cxt.fillText("龙" + obj, gridX + gridWidth / 2 - 30, gridY + gridHeight / 2 + 10);
+            drawObj("yellow", "龙" + obj);
         } else { // obj 9-15
-            cxt.fillStyle = "green";
-            //cxt.strokeStyle = "green";
-            cxt.beginPath();
-            cxt.arc(gridX + gridWidth / 2, gridY + gridHeight / 2, gridWidth / 4, 0, 360, false);
-            cxt.fill();
-            //cxt.stroke();
-            cxt.closePath();
-
-            cxt.fillStyle = "black";
-            cxt.font="40px 宋体";
-            cxt.fillText("虎" + (obj - 8), gridX + gridWidth / 2 - 30, gridY + gridHeight / 2 + 10);
+            drawObj("green", "虎" + (obj - 8 ));
         }
+    };
+
+    this.drawEnd = function(text){
+        cxt.fillStyle = "pink";
+        cxt.fillRect(gridWidth / 2, gridHeight * 3 / 2, gridWidth * 3, gridHeight);
+
+        var fontSize = Math.min(gridHeight * 4 / 5, gridWidth * 3 / 8); // 除8是因为text有7个字,预留个空格
+        cxt.fillStyle = "black";
+        cxt.font = fontSize + "px 楷体";
+        cxt.fillText(text, gridWidth / 2 + fontSize / 2, gridHeight * 3 / 2 + gridHeight - fontSize / 5);
     };
 }
 
@@ -140,7 +153,7 @@ function Action(){
            1: "龙赢",
            2: "虎赢"
         };
-        alert("游戏结束！" + result[judgeGameOverResult]);
+        this.draw.drawEnd("游戏结束！" + result[judgeGameOverResult]);
     };
 }
 
@@ -415,6 +428,10 @@ function ControlCenter(){
         if(this.gameOver){
             this.beginGame();
         } else {
+            if(x > canvas.width || y > canvas.height){
+                console.log("点了无效区域！");
+                return;
+            }
             var gridNum = RuleCenter.getClickGridNum(x, y);
             var obj = this.gameStatus.chessboard[gridNum];
             var judgeResult = this.judgeCenter.judgeClick(gridNum, this.turn);
@@ -474,3 +491,12 @@ function Main(){
 }
 
 Main();
+
+//test -- 调效果用
+//var action = new Action();
+//action.beginGame();
+//action.openGrid(3, 3);
+//action.moveGrid(4,9,5);
+//action.selectGrid(8, 10);
+//action.unSelectGrid(8, 10);
+//action.endGame(1);
