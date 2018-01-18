@@ -28,15 +28,15 @@ function Draw(){
 
     this.clearGrid = function(gridNum){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
-        gridX = (gridNum % 4) * gridWidth;
-        gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridX = (gridNum % 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridWidth;
         cxt.clearRect(gridX, gridY, gridWidth, gridHeight);
     };
 
     this.drawSelect = function(gridNum){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
-        gridX = (gridNum % 4) * gridWidth;
-        gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridX = (gridNum % 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridWidth;
 
         cxt.fillStyle = "#ABCDEF";
         cxt.fillRect(gridX, gridY, gridWidth, gridWidth);
@@ -57,8 +57,8 @@ function Draw(){
     this.drawGrid = function(gridNum, obj){
         console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
         console.assert(new RegExp('^-?\\d+$').test(obj) && obj >= -1 && obj <= 16, "illeagle obj:" + obj);
-        gridX = (gridNum % 4) * gridWidth;
-        gridY = parseInt(gridNum / 4) * gridWidth;
+        var gridX = (gridNum % 4) * gridWidth;
+        var gridY = parseInt(gridNum / 4) * gridWidth;
         //console.log(gridX + ',' + gridY);
         cxt.strokeStyle = "red";
         cxt.strokeRect(gridX, gridY, gridWidth, gridHeight);
@@ -154,7 +154,7 @@ Utils.getRandomSort = function(arr){
     var arrCp = arr.concat();
     var newArr = [];
     for(var i = arrCp.length - 1; i >= 0; i--){
-        pos = this.randomNum(0, i);
+        var pos = this.randomNum(0, i);
         newArr.push(arrCp[pos]);
         arrCp[pos] = arrCp[i];
     }
@@ -216,7 +216,8 @@ RuleCenter.isNearby = function(gridNum1, gridNum2){
 };
 
 RuleCenter.canEat = function(obj1, obj2){// -1:不能吃 0:同归于尽 1:能吃
-    console.assert(new RegExp('^\\d+$').test(obj) && obj >= 0 && obj <= 16, "illeagle obj:" + obj);
+    console.assert(new RegExp('^\\d+$').test(obj1) && obj1 >= 0 && obj1 <= 16, "illeagle obj:" + obj1);
+    console.assert(new RegExp('^\\d+$').test(obj2) && obj2 >= 0 && obj2 <= 16, "illeagle obj:" + obj2);
     if(obj1 > 8){
         obj1 = obj1 - 8;
     }
@@ -238,8 +239,8 @@ RuleCenter.canEat = function(obj1, obj2){// -1:不能吃 0:同归于尽 1:能吃
 };
 
 RuleCenter.getClickGridNum = function(x, y){
-    var numX = x / gridWidth;
-    var numY = y / gridHeight;
+    var numX = parseInt(x / gridWidth);
+    var numY = parseInt(y / gridHeight);
     return numY * 4 + numX;
 };
 
@@ -249,12 +250,12 @@ function JudgeCenter(){
     };
 
     //0:非法 1:打开迷雾 2:选择 3:普通移动 4:吃 5:同归于尽
-    this.clickResult = {
+    JudgeCenter.clickResult = {
         ILLEGAL_SELECT_NULL: -1,
         ILLEGAL_SELECT_ENEMY: -2,
         ILLEGAL_EAT_SELF: -3,
         ILLEGAL_EAT_STRONGER_ENEMY: -4,
-        ILLEGAL_NOT_NEARBY: -4,
+        ILLEGAL_NOT_NEARBY: -5,
         OPEN_FOG: 1,
         SELECT: 2,
         MOVE: 3,
@@ -265,37 +266,39 @@ function JudgeCenter(){
     turn: 0:龙 1:虎
      */
     this.judgeClick = function(gridNum, turn){
-        if(gameStatus.fogs[gridNum]){
-            return this.clickResult.OPEN_FOG;
+        console.assert(new RegExp('^\\d+$').test(gridNum) && gridNum >= 0 && gridNum <= 15, "illeagle gridNum:" + gridNum);
+        console.assert(turn == 0 || turn == 1);
+        if(this.gameStatus.fogs[gridNum]){
+            return JudgeCenter.clickResult.OPEN_FOG;
         } else {
-            var obj = gameStatus.chessboard[gridNum];
+            var obj = this.gameStatus.chessboard[gridNum];
             var condition_select_self = (turn == 0 && obj > 0 && obj <= 8 || turn == 1 && obj >= 9 && obj <= 16);
-            if(gameStatus.currentSelect == -1){
+            if(this.gameStatus.currentSelect == -1){
                 if(condition_select_self){
-                    return this.clickResult.SELECT;
+                    return JudgeCenter.clickResult.SELECT;
                 } else if(obj == 0){
-                    return this.clickResult.ILLEGAL_SELECT_NULL;
+                    return JudgeCenter.clickResult.ILLEGAL_SELECT_NULL;
                 } else {
-                    return this.clickResult.ILLEGAL_SELECT_ENEMY;
+                    return JudgeCenter.clickResult.ILLEGAL_SELECT_ENEMY;
                 }
             } else {
-                var objFrom = gameStatus.getCurrSelectObj();
-                if(RuleCenter.isNearby(gameStatus.currentSelect, gridNum)){
+                var objFrom = this.gameStatus.getCurrSelectObj();
+                if(RuleCenter.isNearby(this.gameStatus.currentSelect, gridNum)){
                     if(obj == 0){
-                        return this.clickResult.MOVE;
+                        return JudgeCenter.clickResult.MOVE;
                     } else if(condition_select_self){
-                        return this.ILLEGAL_EAT_SELF;
+                        return JudgeCenter.clickResult.ILLEGAL_EAT_SELF;
                     } else {
                         if(RuleCenter.canEat(objFrom, obj) == 1){
-                            return this.clickResult.EAT;
+                            return JudgeCenter.clickResult.EAT;
                         } else if(RuleCenter.canEat(objFrom, obj) == 0){
-                            return this.clickResult.PERISH_TOGETHER;
+                            return JudgeCenter.clickResult.PERISH_TOGETHER;
                         } else {
-                            return this.clickResult.ILLEGAL_EAT_STRONGER_ENEMY;
+                            return JudgeCenter.clickResult.ILLEGAL_EAT_STRONGER_ENEMY;
                         }
                     }
                 } else {
-                    return this.clickResult.ILLEGAL_NOT_NEARBY;
+                    return JudgeCenter.clickResult.ILLEGAL_NOT_NEARBY;
                 }
             }
         }
@@ -357,7 +360,7 @@ LogUtils.logWanted = function(selectedGridNum, currGridNum, result){
     } else if(result == JudgeCenter.clickResult.PERISH_TOGETHER){
         console.log("ctrl: 同归于尽!!!");
     } else {
-        console.log("未知情况。。。" );
+        console.log("未知情况。。。 result:" + result );
     }
 };
 LogUtils.logCtrlResult = function(succeed){
@@ -398,6 +401,7 @@ function ControlCenter(){
 
         this.turn = 0;
         this.gameOver = false;
+        LogUtils.logBegin();
     };
     this.refresh = function(){
         this.ctl_action.beginGame();
@@ -421,7 +425,7 @@ function ControlCenter(){
             if(fromGridNum != -1){
                 fromObj = this.gameStatus.chessboard[fromGridNum];
                 this.gameStatus.currentSelect = -1;
-                this.ctl_action.unSelectGrid(fromGridNum);
+                this.ctl_action.unSelectGrid(fromGridNum, fromObj);
             }
             if(judgeResult > 0){
                 if(judgeResult == JudgeCenter.clickResult.OPEN_FOG){
@@ -430,13 +434,15 @@ function ControlCenter(){
                 } else if(judgeResult == JudgeCenter.clickResult.SELECT){
                     this.gameStatus.currentSelect = gridNum;
                     this.ctl_action.selectGrid(gridNum, obj);
+                    LogUtils.logCtrlResult(true);
+                    return;
                 } else if(judgeResult == JudgeCenter.clickResult.MOVE || judgeResult == JudgeCenter.clickResult.EAT){
                     console.assert(fromGridNum != -1);
                     this.gameStatus.chessboard[gridNum] = fromObj;
                     this.gameStatus.chessboard[fromGridNum] = 0;
                     this.ctl_action.moveGrid(fromGridNum, fromObj, gridNum);
                 } else if(judgeResult == JudgeCenter.clickResult.PERISH_TOGETHER){
-                    this.gameStatus.chessboard[gridNums] = 0;
+                    this.gameStatus.chessboard[gridNum] = 0;
                     this.gameStatus.chessboard[fromGridNum] = 0;
                     this.ctl_action.moveGrid(fromGridNum, 0, gridNum);
                 }
@@ -446,7 +452,7 @@ function ControlCenter(){
                 this.gameOver = (judgeGameOverResult >= 0);
                 if(this.gameOver){
                     LogUtils.logGameOver(this.gameStatus.getSurvives());
-                    this.ctl_action.endGame(judgeGameOverResult);
+                    setInterval(this.ctl_action.endGame(judgeGameOverResult), 2000);
                 }
             } else {
                 LogUtils.logCtrlResult(false);
@@ -458,8 +464,13 @@ function ControlCenter(){
 function Main(){
     var ctrlCenter = new ControlCenter();
     ctrlCenter.beginGame();
-    alert(ctrlCenter.gameStatus.chessboard);
-    //todo test onMouseClick
+    console.log(ctrlCenter.gameStatus.chessboard);
+    canvas.onclick = function(evt){
+        evt=window.event||evt;
+        var x = evt.pageX - this.offsetLeft;
+        var y = evt.pageY - this.offsetTop;
+        ctrlCenter.onMouseClick(x, y);
+    };
 }
 
 Main();
