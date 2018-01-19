@@ -403,10 +403,18 @@ LogUtils.logGameOver = function(survives){
 };
 
 function ControlCenter(){
+    var _this = this;
     this.ctl_action = new Action();
     this.gameStatus = new GameStatus();
     this.judgeCenter = new JudgeCenter();
     this.judgeCenter.initStatus(this.gameStatus);
+    ControlCenter.gameModes = {
+        SINGLE_TAKE_TURNS : 1,
+        SINGLE_ROBOT : 2
+    };
+    this.setGameMode = function(mode){
+        this.gameMode = mode;
+    };
 
     this.beginGame = function(){
         this.gameStatus.init();
@@ -424,63 +432,95 @@ function ControlCenter(){
             }
         }
     };
+    this.onMouseClickImpl = function(gridNum){
+        var obj = this.gameStatus.chessboard[gridNum];
+        var judgeResult = this.judgeCenter.judgeClick(gridNum, this.turn);
+        LogUtils.logWanted(this.gameStatus.currentSelect, gridNum, judgeResult);
+
+        var fromGridNum = this.gameStatus.currentSelect;
+        var fromObj = -1;
+        if(fromGridNum != -1){
+            fromObj = this.gameStatus.chessboard[fromGridNum];
+            this.gameStatus.currentSelect = -1;
+            this.ctl_action.unSelectGrid(fromGridNum, fromObj);
+        }
+        if(judgeResult > 0){
+            if(judgeResult == JudgeCenter.clickResult.OPEN_FOG){
+                this.gameStatus.fogs[gridNum] = false;
+                this.ctl_action.openGrid(gridNum, obj);
+            } else if(judgeResult == JudgeCenter.clickResult.SELECT){
+                this.gameStatus.currentSelect = gridNum;
+                this.ctl_action.selectGrid(gridNum, obj);
+                LogUtils.logCtrlResult(true);
+                return;
+            } else if(judgeResult == JudgeCenter.clickResult.MOVE || judgeResult == JudgeCenter.clickResult.EAT){
+                console.assert(fromGridNum != -1);
+                this.gameStatus.chessboard[gridNum] = fromObj;
+                this.gameStatus.chessboard[fromGridNum] = 0;
+                this.ctl_action.moveGrid(fromGridNum, fromObj, gridNum);
+            } else if(judgeResult == JudgeCenter.clickResult.PERISH_TOGETHER){
+                this.gameStatus.chessboard[gridNum] = 0;
+                this.gameStatus.chessboard[fromGridNum] = 0;
+                this.ctl_action.moveGrid(fromGridNum, 0, gridNum);
+            }
+            LogUtils.logCtrlResult(true);
+            this.turn = (this.turn + 1) % 2;
+            var judgeGameOverResult = this.judgeCenter.judgeGameOver();
+            this.gameOver = (judgeGameOverResult >= 0);
+            if(this.gameOver){
+                LogUtils.logGameOver(this.gameStatus.getSurvives());
+                setInterval(this.ctl_action.endGame(judgeGameOverResult), 2000);
+            }
+        } else {
+            LogUtils.logCtrlResult(false);
+        }
+    };
     this.onMouseClick = function(x, y){
         if(this.gameOver){
             this.beginGame();
         } else {
+            if(this.gameMode == ControlCenter.gameModes.SINGLE_ROBOT && this.turn == 1)
+                return;
             if(x > canvas.width || y > canvas.height){
                 console.log("点了无效区域！");
                 return;
             }
             var gridNum = RuleCenter.getClickGridNum(x, y);
-            var obj = this.gameStatus.chessboard[gridNum];
-            var judgeResult = this.judgeCenter.judgeClick(gridNum, this.turn);
-            LogUtils.logWanted(this.gameStatus.currentSelect, gridNum, judgeResult);
+            _this.onMouseClickImpl(gridNum);
+        }
+    };
+}
 
-            var fromGridNum = this.gameStatus.currentSelect;
-            var fromObj = -1;
-            if(fromGridNum != -1){
-                fromObj = this.gameStatus.chessboard[fromGridNum];
-                this.gameStatus.currentSelect = -1;
-                this.ctl_action.unSelectGrid(fromGridNum, fromObj);
-            }
-            if(judgeResult > 0){
-                if(judgeResult == JudgeCenter.clickResult.OPEN_FOG){
-                    this.gameStatus.fogs[gridNum] = false;
-                    this.ctl_action.openGrid(gridNum, obj);
-                } else if(judgeResult == JudgeCenter.clickResult.SELECT){
-                    this.gameStatus.currentSelect = gridNum;
-                    this.ctl_action.selectGrid(gridNum, obj);
-                    LogUtils.logCtrlResult(true);
-                    return;
-                } else if(judgeResult == JudgeCenter.clickResult.MOVE || judgeResult == JudgeCenter.clickResult.EAT){
-                    console.assert(fromGridNum != -1);
-                    this.gameStatus.chessboard[gridNum] = fromObj;
-                    this.gameStatus.chessboard[fromGridNum] = 0;
-                    this.ctl_action.moveGrid(fromGridNum, fromObj, gridNum);
-                } else if(judgeResult == JudgeCenter.clickResult.PERISH_TOGETHER){
-                    this.gameStatus.chessboard[gridNum] = 0;
-                    this.gameStatus.chessboard[fromGridNum] = 0;
-                    this.ctl_action.moveGrid(fromGridNum, 0, gridNum);
-                }
-                LogUtils.logCtrlResult(true);
-                this.turn = (this.turn + 1) % 2;
-                var judgeGameOverResult = this.judgeCenter.judgeGameOver();
-                this.gameOver = (judgeGameOverResult >= 0);
-                if(this.gameOver){
-                    LogUtils.logGameOver(this.gameStatus.getSurvives());
-                    setInterval(this.ctl_action.endGame(judgeGameOverResult), 2000);
-                }
-            } else {
-                LogUtils.logCtrlResult(false);
+function Robot(){
+    var _this = this;
+    this.initCtrlCenter = function(ctrlCenter){
+        this.ctrlCenter = ctrlCenter;
+    };
+    this.judgeRobotCtrl = function(){
+        //console.log("机器人判断：", this.ctrlCenter.gameMode == ControlCenter.gameModes.SINGLE_ROBOT, this.ctrlCenter.turn == 1);
+        return this.ctrlCenter.gameMode == ControlCenter.gameModes.SINGLE_ROBOT && this.ctrlCenter.turn == 1 && !this.ctrlCenter.gameOver;
+    };
+    this.robotDo = function(){
+        console.log("这是机器人");
+        var randomGridList = Utils.getRandomSort(Utils.range(0,15));
+        for(var i = 0; i < 16; i++) {
+            if(this.ctrlCenter.judgeCenter.judgeClick(randomGridList[i], this.ctrlCenter.turn) > 0){
+                this.ctrlCenter.onMouseClickImpl(randomGridList[i]);
+                return;
             }
         }
     };
+    this.robotCtrl = function(){
+        if(_this.judgeRobotCtrl()){
+            _this.robotDo();
+        }
+    }
 }
 
 function Main(){
     var ctrlCenter = new ControlCenter();
     ctrlCenter.beginGame();
+    ctrlCenter.setGameMode(ControlCenter.gameModes.SINGLE_ROBOT);
     console.log(ctrlCenter.gameStatus.chessboard);
     canvas.onclick = function(evt){
         evt=window.event||evt;
@@ -488,6 +528,10 @@ function Main(){
         var y = evt.pageY - this.offsetTop;
         ctrlCenter.onMouseClick(x, y);
     };
+
+    var robot = new Robot();
+    robot.initCtrlCenter(ctrlCenter);
+    setInterval(robot.robotCtrl, 1000);
 }
 
 Main();
