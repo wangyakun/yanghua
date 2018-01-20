@@ -509,6 +509,8 @@ function Robot(){
                 return;
             }
         }
+        //select状态哪都不能走会到这来，此时需要随便点个地方解除select状态
+        this.ctrlCenter.onMouseClickImpl(randomGridList[0]);
     };
     this.robotCtrl = function(){
         if(_this.judgeRobotCtrl()){
